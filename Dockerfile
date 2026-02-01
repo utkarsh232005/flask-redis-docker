@@ -1,20 +1,38 @@
-# Step 1: Base Image
-FROM python:3.9-slim
+# Stage 1: Builder
+FROM python:3.9-slim as builder
 
-# Step 2: Set Working Directory
 WORKDIR /app
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Step 3: Copy Requirements
 COPY requirements.txt .
-
-# Step 4: Install Dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Step 5: Copy Application Code
+# Stage 2: Runtime
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Create a non-root user
+RUN adduser --disabled-password --gecos '' appuser
+
+# Copy virtual env from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy application code
 COPY . .
 
-# Step 6: Expose Port
+# Change ownership
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 5000
 
-# Step 7: Define Entrypoint
-CMD ["python", "app.py"]
+# Run with Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]

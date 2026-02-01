@@ -3,7 +3,10 @@ __pycache__
 *.pyo
 *.pyd
 .Python
-env
-venv
+env/
+venv/
+.env
 .git
 .gitignore
+docker-compose.yml
+README.md
